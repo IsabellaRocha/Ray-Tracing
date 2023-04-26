@@ -1,7 +1,7 @@
 /* **************************
  * CSCI 420
  * Assignment 3 Raytracer
- * Name: <Your name here>
+ * Name: irocha
  * *************************
 */
 
@@ -25,10 +25,16 @@
 #endif
 
 #include <imageIO.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <cmath>
+#include <algorithm>
 
 #define MAX_TRIANGLES 20000
 #define MAX_SPHERES 100
 #define MAX_LIGHTS 100
+
+#define PI 3.141529
 
 char * filename = NULL;
 
@@ -38,12 +44,20 @@ char * filename = NULL;
 
 int mode = MODE_DISPLAY;
 
-//you may want to make these smaller for debugging purposes
-#define WIDTH 640
-#define HEIGHT 480
+//you may want to make these smaller for debugging purposes (change back to 640 x 480)
+#define WIDTH 320
+#define HEIGHT 240
 
 //the field of view of the camera
 #define fov 60.0
+
+double aspectRatio = (double) WIDTH / (double) HEIGHT;
+double leftOfImage = -aspectRatio * tan((fov / 2) * PI / 180.0);
+double rightOfImage = aspectRatio * tan((fov / 2) * PI / 180.0);
+double bottomOfImage = -tan((fov / 2) * PI / 180.0);
+double topOfImage = tan((fov / 2) * PI / 180.0);
+
+
 
 unsigned char buffer[HEIGHT][WIDTH][3];
 
@@ -76,6 +90,11 @@ struct Light
   double color[3];
 };
 
+struct Ray {
+    glm::vec3 originOfRay;
+    glm::vec3 directionOfRay;
+};
+
 Triangle triangles[MAX_TRIANGLES];
 Sphere spheres[MAX_SPHERES];
 Light lights[MAX_LIGHTS];
@@ -89,21 +108,119 @@ void plot_pixel_display(int x,int y,unsigned char r,unsigned char g,unsigned cha
 void plot_pixel_jpeg(int x,int y,unsigned char r,unsigned char g,unsigned char b);
 void plot_pixel(int x,int y,unsigned char r,unsigned char g,unsigned char b);
 
+double triangleIntersect(Ray ray) {
+    //Currently set to the max value of a double so as not to risk an actual value being above it and not replaced properly
+    double triangleIntersectionValue = DBL_MAX;
+    
+    for (int i = 0; i < num_triangles; i++) {
+        Triangle currTriangle = triangles[i];
+        
+        glm::vec3 A = glm::vec3(currTriangle.v[0].position[0], currTriangle.v[0].position[1], currTriangle.v[0].position[2]);
+        glm::vec3 B = glm::vec3(currTriangle.v[1].position[0], currTriangle.v[1].position[1], currTriangle.v[1].position[2]);
+        glm::vec3 C = glm::vec3(currTriangle.v[2].position[0], currTriangle.v[2].position[1], currTriangle.v[2].position[2]);
+        glm::vec3 normal = glm::cross(B - A, C - A);
+
+        bool isParallel = glm::dot(ray.directionOfRay, normal) == 0.0;
+        //if the dot product is 0, there is no intersection between the ray and plane 
+        if (!isParallel) {
+            //From lecture 16 ray-polygon intersection II
+            double t = -(glm::dot(A, normal) + glm::dot(ray.originOfRay, normal)) / glm::dot(ray.directionOfRay, normal);
+            //Check if point p is inside the triangle
+            //t must be greater than 0 or else the intersection is behind the origin of the ray
+            if (t > 0 && t < triangleIntersectionValue) {
+                glm::vec3 P = ray.originOfRay + glm::vec3(ray.directionOfRay.x * t, ray.directionOfRay.y * t, ray.directionOfRay.z * t);
+                //If the dot product is positive, it means that the point P is on the same side of the triangle as its normal vector, indicating that it is outside the triangle. 
+                //If the dot product is negative, it means that the point P is on the opposite side of the triangle as its normal vector, indicating that it is inside the triangle.
+                glm::vec3 AxP0 = glm::cross(B - A, P - A);
+                glm::vec3 BxP0 = glm::cross(C - B, P - B);
+                glm::vec3 CxP0 = glm::cross(A - C, P - C);
+                if (glm::dot(AxP0, BxP0) > 0 && glm::dot(AxP0, CxP0) > 0) triangleIntersectionValue = t;
+                /*
+                double intersects = glm::dot(normal, P);
+                if (intersects < 0.0) triangleIntersectionValue = t;
+                */
+            }
+        }
+
+    }
+    if (triangleIntersectionValue == DBL_MAX) return -1.0;
+    return triangleIntersectionValue;
+}
+
+double sphereIntersect(Ray ray) {
+    //Currently set to the max value of a double so as not to risk an actual value being above it and not replaced properly
+    double sphereIntersectionValue = DBL_MAX;
+
+    for (int i = 0; i < num_spheres; i++) {
+        Sphere currSphere = spheres[i];
+        //From lecture 16, Ray-Sphere Intersection II
+        double b = 2.0 * (ray.directionOfRay.x * (ray.originOfRay.x - currSphere.position[0]) +
+            ray.directionOfRay.y * (ray.originOfRay.y - currSphere.position[1]) +
+            ray.directionOfRay.z * (ray.originOfRay.z - currSphere.position[2]));
+        double c = pow(ray.originOfRay.x - currSphere.position[0], 2) +
+            pow(ray.originOfRay.y - currSphere.position[1], 2) +
+            pow(ray.originOfRay.z - currSphere.position[2], 2) -
+            pow(currSphere.radius, 2);
+
+        bool isRadicalPositive = pow(b, 2) - (4 * c) >= 0;
+        if (isRadicalPositive) {
+            double t0 = (-b + sqrt(pow(b, 2) - (4 * c))) / 2.0;
+            double t1 = (-b - sqrt(pow(b, 2) - (4 * c))) / 2.0;
+            if (t0 > 0 && t1 > 0) sphereIntersectionValue = std::min(t0, t1);
+            else if (t0 > 0) sphereIntersectionValue = t0;
+            else if (t1 > 0) sphereIntersectionValue = t1;
+        }
+    }
+    if (sphereIntersectionValue == DBL_MAX) return -1.0;
+    return sphereIntersectionValue;
+}
 //MODIFY THIS FUNCTION
 void draw_scene()
 {
-  //a simple test output
-  for(unsigned int x=0; x<WIDTH; x++)
-  {
-    glPointSize(2.0);  
-    glBegin(GL_POINTS);
-    for(unsigned int y=0; y<HEIGHT; y++)
-    {
-      plot_pixel(x, y, x % 256, y % 256, (x+y) % 256);
+    float zeroArray[3] = { 0.0, 0.0, 0.0 };
+    glm::vec3 camPos = glm::make_vec3(zeroArray);
+    //currI and currJ used to move along image and draw each line
+    double currI = leftOfImage;
+    for (int i = 0; i < WIDTH; i++) {
+        glPointSize(2.0);
+        glBegin(GL_POINTS);
+
+        double currJ = bottomOfImage;
+        for (int j = 0; j < HEIGHT; j++) {
+            //Will be updated with color values r, g, b
+            glm::vec3 rayTracedColor = glm::vec3(0.0, 0.0, 0.0);
+            double finalIntersectionValue;
+
+            double currDirectionArray[3] = { currI, currJ, -1 };
+            glm::vec3 currDirection = glm::make_vec3(currDirectionArray);
+            glm::vec3 normalizedDirection = glm::normalize(currDirection);
+
+            Ray emittedRay;
+            emittedRay.originOfRay = camPos;
+            emittedRay.directionOfRay = normalizedDirection;
+
+            double triangleIntersectionValue = triangleIntersect(emittedRay);
+            double sphereIntersectionValue = sphereIntersect(emittedRay);
+
+            if (triangleIntersectionValue <= 0 || (sphereIntersectionValue > 0 && sphereIntersectionValue < triangleIntersectionValue)) {
+                finalIntersectionValue = sphereIntersectionValue;
+                rayTracedColor.x = 255.0;
+            }
+            else {
+                finalIntersectionValue = triangleIntersectionValue;
+                rayTracedColor.y = 255.0;
+            }
+            if (finalIntersectionValue > 0) plot_pixel(i, j, rayTracedColor.x, rayTracedColor.y, rayTracedColor.z);
+            else plot_pixel(i, j, 255.0, 255.0, 255.0);
+
+            currJ += (topOfImage - bottomOfImage) / (HEIGHT - 1);
+        }
+        glEnd();
+        glFlush();
+        currI += (rightOfImage - leftOfImage) / (WIDTH - 1);
+
     }
-    glEnd();
-    glFlush();
-  }
+  
   printf("Done!\n"); fflush(stdout);
 }
 

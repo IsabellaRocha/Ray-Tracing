@@ -1,6 +1,22 @@
-﻿  imageIO.cpp
-  hw3.cpp
-  Generating Code...
+﻿  hw3.cpp
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(213,112): warning C4244: 'argument': conversion from 'T' to 'unsigned char', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(213,94): warning C4244: 'argument': conversion from 'T' to 'unsigned char', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(213,76): warning C4244: 'argument': conversion from 'T' to 'unsigned char', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(214,49): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(214,42): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(214,35): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
   jpeg.lib(jerror.obj) : MSIL .netmodule or module compiled with /GL found; restarting link with /LTCG; add /LTCG to the link command line to improve linker performance
 LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification
 LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
