@@ -121,10 +121,11 @@ double triangleIntersect(Ray ray) {
         glm::vec3 normal = glm::cross(B - A, C - A);
 
         bool isParallel = glm::dot(ray.directionOfRay, normal) == 0.0;
+        
         //if the dot product is 0, there is no intersection between the ray and plane 
         if (!isParallel) {
             //From lecture 16 ray-polygon intersection II
-            double t = -(glm::dot(A, normal) + glm::dot(ray.originOfRay, normal)) / glm::dot(ray.directionOfRay, normal);
+            double t = (glm::dot(A, normal) - glm::dot(ray.originOfRay, normal)) / glm::dot(ray.directionOfRay, normal);
             //Check if point p is inside the triangle
             //t must be greater than 0 or else the intersection is behind the origin of the ray
             if (t > 0 && t < triangleIntersectionValue) {
@@ -135,10 +136,7 @@ double triangleIntersect(Ray ray) {
                 glm::vec3 BxP0 = glm::cross(C - B, P - B);
                 glm::vec3 CxP0 = glm::cross(A - C, P - C);
                 if (glm::dot(AxP0, BxP0) > 0 && glm::dot(AxP0, CxP0) > 0) triangleIntersectionValue = t;
-                /*
-                double intersects = glm::dot(normal, P);
-                if (intersects < 0.0) triangleIntersectionValue = t;
-                */
+              
             }
         }
 
@@ -174,6 +172,10 @@ double sphereIntersect(Ray ray) {
     if (sphereIntersectionValue == DBL_MAX) return -1.0;
     return sphereIntersectionValue;
 }
+
+void getColor(glm::vec3 position, glm::vec3 currColor) {
+
+}
 //MODIFY THIS FUNCTION
 void draw_scene()
 {
@@ -202,16 +204,26 @@ void draw_scene()
             double triangleIntersectionValue = triangleIntersect(emittedRay);
             double sphereIntersectionValue = sphereIntersect(emittedRay);
 
-            if (triangleIntersectionValue <= 0 || (sphereIntersectionValue > 0 && sphereIntersectionValue < triangleIntersectionValue)) {
-                finalIntersectionValue = sphereIntersectionValue;
-                rayTracedColor.x = 255.0;
+            if (triangleIntersectionValue < 0 && sphereIntersectionValue < 0) {
+                //There is no intersection, make white
+                plot_pixel(i, j, 255.0, 255.0, 255.0);
             }
             else {
-                finalIntersectionValue = triangleIntersectionValue;
-                rayTracedColor.y = 255.0;
+                //If it does not intersect with a triangle but intersects with a sphere, or it intersects with both but the sphere takes precedent
+                if ((triangleIntersectionValue <= 0 && sphereIntersectionValue > 0) || (sphereIntersectionValue > 0 && sphereIntersectionValue < triangleIntersectionValue)) {
+                    finalIntersectionValue = sphereIntersectionValue;
+                    //temp make red to test intersection
+                    rayTracedColor.x = 255.0;
+                }
+                //If it does not intersect with a sphere but intersects with a triangle, or it intersects with both but the triangle takes precedent
+
+                else if ((sphereIntersectionValue <= 0 && triangleIntersectionValue > 0) || (triangleIntersectionValue > 0 && triangleIntersectionValue < sphereIntersectionValue)) {
+                    finalIntersectionValue = triangleIntersectionValue;
+                    //temp make green to test intersection
+                    rayTracedColor.y = 255.0;
+                }
+                if (finalIntersectionValue > 0) plot_pixel(i, j, rayTracedColor.x, rayTracedColor.y, rayTracedColor.z);
             }
-            if (finalIntersectionValue > 0) plot_pixel(i, j, rayTracedColor.x, rayTracedColor.y, rayTracedColor.z);
-            else plot_pixel(i, j, 255.0, 255.0, 255.0);
 
             currJ += (topOfImage - bottomOfImage) / (HEIGHT - 1);
         }
