@@ -258,7 +258,7 @@ bool shadowIntersect(Light light, VertexForIntersectionPoints intersectionPoint)
     glm::vec3 lightPosition = glm::make_vec3(light.position);
     //Shadow rays start from the intersection point of a light ray and an object
     glm::vec3 directionOfShadowRay = glm::normalize(lightPosition - intersectionPoint.position);
-    glm::vec3 originOfShadowRay = intersectionPoint.position + glm::vec3(directionOfShadowRay.x * 1e-5, directionOfShadowRay.y * 1e-5, directionOfShadowRay.z * 1e-5);
+    glm::vec3 originOfShadowRay = intersectionPoint.position + glm::vec3(directionOfShadowRay.x, directionOfShadowRay.y, directionOfShadowRay.z);
 
     Ray shadowRay;
     shadowRay.originOfRay = originOfShadowRay;
@@ -285,7 +285,7 @@ bool shadowIntersect(Light light, VertexForIntersectionPoints intersectionPoint)
     double distanceBtwnLightAndPoint = sqrt(pow((intersectionPoint.position - lightPosition).x, 2) + pow((intersectionPoint.position - lightPosition).y, 2) + pow((intersectionPoint.position - lightPosition).z, 2));
 
     //If the distances are greater than a very small value, the shadow ray is blocked
-    if (distanceBtwnShadowAndPoint - distanceBtwnLightAndPoint > 0.0000001) return false;
+    if (distanceBtwnShadowAndPoint - distanceBtwnLightAndPoint > 1e-5) return false;
 
     return true;
 }
@@ -341,6 +341,7 @@ double* triangleCalculations(Triangle triangle, glm::vec3 position) {
     glm::vec3 vertexOnePosition = glm::make_vec3(triangle.v[0].position);
     glm::vec3 vertexTwoPosition = glm::make_vec3(triangle.v[1].position);
     glm::vec3 vertexThreePosition = glm::make_vec3(triangle.v[2].position);
+    
     glm::vec3 sideOneOfTriangle = vertexTwoPosition - vertexOnePosition;
     glm::vec3 sideTwoOfTriangle = vertexThreePosition - vertexOnePosition;
 
@@ -372,18 +373,18 @@ glm::vec3 phongLightingTriangle(Ray emittedRay) {
     double* areaRatios = triangleCalculations(currTriangle, position);
 
     glm::vec3 diffuse = glm::vec3(currTriangle.v[0].color_diffuse[0] * areaRatios[0], currTriangle.v[0].color_diffuse[1] * areaRatios[0], currTriangle.v[0].color_diffuse[2] * areaRatios[0]) +
-        glm::vec3(currTriangle.v[1].color_diffuse[0] * areaRatios[0], currTriangle.v[1].color_diffuse[1] * areaRatios[0], currTriangle.v[1].color_diffuse[2] * areaRatios[1]) +
-        glm::vec3(currTriangle.v[2].color_diffuse[0] * areaRatios[0], currTriangle.v[2].color_diffuse[1] * areaRatios[0], currTriangle.v[2].color_diffuse[2] * areaRatios[2]);
+        glm::vec3(currTriangle.v[1].color_diffuse[0] * areaRatios[1], currTriangle.v[1].color_diffuse[1] * areaRatios[1], currTriangle.v[1].color_diffuse[2] * areaRatios[1]) +
+        glm::vec3(currTriangle.v[2].color_diffuse[0] * areaRatios[2], currTriangle.v[2].color_diffuse[1] * areaRatios[2], currTriangle.v[2].color_diffuse[2] * areaRatios[2]);
 
     glm::vec3 specular = glm::vec3(currTriangle.v[0].color_specular[0] * areaRatios[0], currTriangle.v[0].color_specular[1] * areaRatios[0], currTriangle.v[0].color_specular[2] * areaRatios[0]) +
-        glm::vec3(currTriangle.v[1].color_specular[0] * areaRatios[0], currTriangle.v[1].color_specular[1] * areaRatios[0], currTriangle.v[1].color_specular[2] * areaRatios[1]) +
-        glm::vec3(currTriangle.v[2].color_specular[0] * areaRatios[0], currTriangle.v[2].color_specular[1] * areaRatios[0], currTriangle.v[2].color_specular[2] * areaRatios[2]);
+        glm::vec3(currTriangle.v[1].color_specular[0] * areaRatios[1], currTriangle.v[1].color_specular[1] * areaRatios[1], currTriangle.v[1].color_specular[2] * areaRatios[1]) +
+        glm::vec3(currTriangle.v[2].color_specular[0] * areaRatios[2], currTriangle.v[2].color_specular[1] * areaRatios[2], currTriangle.v[2].color_specular[2] * areaRatios[2]);
 
     glm::vec3 normal = glm::normalize(glm::vec3(currTriangle.v[0].normal[0] * areaRatios[0], currTriangle.v[0].normal[1] * areaRatios[0], currTriangle.v[0].normal[2] * areaRatios[0]) +
-        glm::vec3(currTriangle.v[1].normal[0] * areaRatios[0], currTriangle.v[1].normal[1] * areaRatios[0], currTriangle.v[1].normal[2] * areaRatios[1]) +
-        glm::vec3(currTriangle.v[2].normal[0] * areaRatios[0], currTriangle.v[2].normal[1] * areaRatios[0], currTriangle.v[2].normal[2] * areaRatios[2]));
+        glm::vec3(currTriangle.v[1].normal[0] * areaRatios[1], currTriangle.v[1].normal[1] * areaRatios[1], currTriangle.v[1].normal[2] * areaRatios[1]) +
+        glm::vec3(currTriangle.v[2].normal[0] * areaRatios[2], currTriangle.v[2].normal[1] * areaRatios[2], currTriangle.v[2].normal[2] * areaRatios[2]));
     
-    double shininess = currTriangle.v[0].shininess * areaRatios[0] + currTriangle.v[1].shininess + currTriangle.v[2].shininess;
+    double shininess = currTriangle.v[0].shininess * areaRatios[0] + currTriangle.v[1].shininess * areaRatios[1] + currTriangle.v[2].shininess * areaRatios[2];
 
     VertexForIntersectionPoints intersectionPoint = { position, diffuse, specular, normal, shininess };
     //Create edges of the triangle
@@ -516,16 +517,6 @@ void parse_doubles(FILE* file, const char *check, double p[3])
   parse_check(check,str);
   fscanf(file,"%lf %lf %lf",&p[0],&p[1],&p[2]);
   printf("%s %lf %lf %lf\n",check,p[0],p[1],p[2]);
-}
-
-
-void parse_doublesVec3(FILE* file, const char* check, glm::vec3 &p)
-{
-    char str[100];
-    fscanf(file, "%s", str);
-    parse_check(check, str);
-    fscanf(file, "%lf %lf %lf", &p.x, &p.y, &p.z);
-    printf("%s %lf %lf %lf\n", check, p.x, p.y, p.z);
 }
 
 void parse_rad(FILE *file, double *r)
