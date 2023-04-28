@@ -273,7 +273,7 @@ bool shadowIntersect(Light light, VertexForIntersectionPoints intersectionPoint)
     //Shadow rays start from the intersection point of a light ray and an object
     glm::vec3 directionOfShadowRay = glm::normalize(lightPosition - intersectionPoint.position);
     //Add direction to avoid issue of shadow ray starting exactly on object, start slightly in front to avoid black dots
-    glm::vec3 originOfShadowRay = intersectionPoint.position + directionOfShadowRay;
+    glm::vec3 originOfShadowRay = intersectionPoint.position + glm::vec3(directionOfShadowRay.x * 0.001, directionOfShadowRay.y * 0.001, directionOfShadowRay.z * 0.001);
 
     Ray shadowRay;
     shadowRay.originOfRay = originOfShadowRay;
@@ -379,24 +379,24 @@ glm::vec3 phongLightingTriangle(Ray emittedRay) {
     //Make sure that the triangle is not perpendicular to the plane you're mapping the Barycentric coordinates onto
     if (abs(glm::dot(normalOfTriangle, glm::vec3(0.0, 1.0, 0.0))) > 0.000001) {
         //Use the XZ plane
-        double totalArea = calculateTriangleAreaInXZPlane(vertexOnePosition, vertexTwoPosition, vertexThreePosition);
-        alpha = calculateTriangleAreaInXZPlane(position, vertexTwoPosition, vertexThreePosition) / totalArea;
-        beta = calculateTriangleAreaInXZPlane(vertexOnePosition, position, vertexThreePosition) / totalArea;
-        gamma = calculateTriangleAreaInXZPlane(vertexOnePosition, vertexTwoPosition, position) / totalArea;
+        double area = calculateTriangleAreaInXZPlane(vertexOnePosition, vertexTwoPosition, vertexThreePosition);
+        alpha = calculateTriangleAreaInXZPlane(position, vertexTwoPosition, vertexThreePosition) / area;
+        beta = calculateTriangleAreaInXZPlane(vertexOnePosition, position, vertexThreePosition) / area;
+        gamma = calculateTriangleAreaInXZPlane(vertexOnePosition, vertexTwoPosition, position) / area;
     }
     else if (abs(glm::dot(normalOfTriangle, glm::vec3(0.0, 0.0, 1.0))) > 0.000001) {
         //Use the XY plane
-        double totalArea = calculateTriangleAreaInXYPlane(vertexOnePosition, vertexTwoPosition, vertexThreePosition);
-        alpha = calculateTriangleAreaInXYPlane(position, vertexTwoPosition, vertexThreePosition) / totalArea;
-        beta = calculateTriangleAreaInXYPlane(vertexOnePosition, position, vertexThreePosition) / totalArea;
-        gamma = calculateTriangleAreaInXYPlane(vertexOnePosition, vertexTwoPosition, position) / totalArea;
+        double area = calculateTriangleAreaInXYPlane(vertexOnePosition, vertexTwoPosition, vertexThreePosition);
+        alpha = calculateTriangleAreaInXYPlane(position, vertexTwoPosition, vertexThreePosition) / area;
+        beta = calculateTriangleAreaInXYPlane(vertexOnePosition, position, vertexThreePosition) / area;
+        gamma = calculateTriangleAreaInXYPlane(vertexOnePosition, vertexTwoPosition, position) / area;
     } 
     else {
         //Use the YZ plane
-        double totalArea = calculateTriangleAreaInYZPlane(vertexOnePosition, vertexTwoPosition, vertexThreePosition);
-        alpha = calculateTriangleAreaInYZPlane(position, vertexTwoPosition, vertexThreePosition) / totalArea;
-        beta = calculateTriangleAreaInYZPlane(vertexOnePosition, position, vertexThreePosition) / totalArea;
-        gamma = calculateTriangleAreaInYZPlane(vertexOnePosition, vertexTwoPosition, position) / totalArea;
+        double area = calculateTriangleAreaInYZPlane(vertexOnePosition, vertexTwoPosition, vertexThreePosition);
+        alpha = calculateTriangleAreaInYZPlane(position, vertexTwoPosition, vertexThreePosition) / area;
+        beta = calculateTriangleAreaInYZPlane(vertexOnePosition, position, vertexThreePosition) / area;
+        gamma = calculateTriangleAreaInYZPlane(vertexOnePosition, vertexTwoPosition, position) / area;
     }
     //adjust based on the ratios alpha beta and gamma
     glm::vec3 diffuse = glm::vec3(currTriangle.v[0].color_diffuse[0] * alpha, currTriangle.v[0].color_diffuse[1] * alpha, currTriangle.v[0].color_diffuse[2] * alpha) +
