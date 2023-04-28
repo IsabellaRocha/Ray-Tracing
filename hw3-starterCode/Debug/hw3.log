@@ -1,22 +1,29 @@
 ﻿  hw3.cpp
-C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(209,48): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
-C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(209,41): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
-C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(209,34): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
-C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(225,116): warning C4244: 'argument': conversion from 'T' to 'unsigned char', possible loss of data
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(439,48): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(439,41): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(439,34): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(457,103): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(457,77): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(457,51): warning C4244: 'argument': conversion from 'double' to 'unsigned char', possible loss of data
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(527,18): warning C4477: 'fscanf' : format string '%lf' requires an argument of type 'double *', but variadic argument 1 has type 'T *'
           with
           [
               T=float
           ]
-C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(225,98): warning C4244: 'argument': conversion from 'T' to 'unsigned char', possible loss of data
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(527,18): message : consider using '%f' in the format string
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(527,18): warning C4477: 'fscanf' : format string '%lf' requires an argument of type 'double *', but variadic argument 2 has type 'T *'
           with
           [
               T=float
           ]
-C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(225,80): warning C4244: 'argument': conversion from 'T' to 'unsigned char', possible loss of data
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(527,18): message : consider using '%f' in the format string
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(527,18): warning C4477: 'fscanf' : format string '%lf' requires an argument of type 'double *', but variadic argument 3 has type 'T *'
           with
           [
               T=float
           ]
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(527,18): message : consider using '%f' in the format string
+C:\Users\imr84\OneDrive\Desktop\csci420\hw3-starterCode-vs2019\hw3-starterCode\hw3-starterCode\hw3.cpp(364): warning C4172: returning address of local variable or temporary: areaRatios
   jpeg.lib(jerror.obj) : MSIL .netmodule or module compiled with /GL found; restarting link with /LTCG; add /LTCG to the link command line to improve linker performance
 LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification
 LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
