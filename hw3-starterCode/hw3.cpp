@@ -113,7 +113,6 @@ int num_triangles = 0;
 int num_spheres = 0;
 int num_lights = 0;
 
-glm::vec3 shadowIntersectionPoint;
 int indexOfIntersectingSphere;
 int indexOfIntersectingTriangle;
 
@@ -143,11 +142,15 @@ double triangleIntersect(Ray ray) {
             //t must be greater than 0 or else the intersection is behind the origin of the ray
             if (t > 0 && t < triangleIntersectionValue) {
                 glm::vec3 P = ray.originOfRay + glm::vec3(ray.directionOfRay.x * t, ray.directionOfRay.y * t, ray.directionOfRay.z * t);
-                //Get all the cross products of P, if they are all above 0 then they are all going in the same direction from the plane, so P must be inside the triangle
-                glm::vec3 AxP0 = glm::cross(B - A, P - A);
-                glm::vec3 BxP0 = glm::cross(C - B, P - B);
-                glm::vec3 CxP0 = glm::cross(A - C, P - C);
-                if (glm::dot(AxP0, BxP0) > 0 && glm::dot(AxP0, CxP0) > 0) {
+                //Get all the cross products of P to a vertex and the side with the same ending vertex that the vector from P is drawn from and normalize
+                glm::vec3 sideOneCrossP = glm::normalize(glm::cross(B - A, P - A));
+                glm::vec3 sideTwoCrossP = glm::normalize(glm::cross(C - B, P - B));
+                glm::vec3 sideThreeCrossP = glm::normalize(glm::cross(A - C, P - C));
+                //If p lies within the triangle, all 3 of these cross products should be pointing in the same direction perpendicular from the triangle
+                //If 2 vectors are perpendicular, their dot product should equal 1 (giving it some wiggle room)
+                if (glm::dot(sideOneCrossP, sideTwoCrossP) > 0.99 && glm::dot(sideOneCrossP, sideTwoCrossP) < 1.01 && 
+                    glm::dot(sideOneCrossP, sideThreeCrossP) > 0.99 && glm::dot(sideOneCrossP, sideThreeCrossP) < 1.01 &&
+                    glm::dot(sideTwoCrossP, sideThreeCrossP) > 0.99 && glm::dot(sideTwoCrossP, sideThreeCrossP) < 1.01) {
                     triangleIntersectionValue = t;
                     indexOfIntersectingTriangle = i;
                 }
@@ -188,6 +191,7 @@ double sphereIntersect(Ray ray) {
     return sphereIntersectionValue;
 }
 
+//Same as above just not updating index
 double triangleIntersectForShadow(Ray ray) {
     //Currently set to the max value of a double so as not to risk an actual value being above it and not replaced properly
     double triangleIntersectionValue = DBL_MAX;
@@ -210,11 +214,15 @@ double triangleIntersectForShadow(Ray ray) {
             //t must be greater than 0 or else the intersection is behind the origin of the ray
             if (t > 0 && t < triangleIntersectionValue) {
                 glm::vec3 P = ray.originOfRay + glm::vec3(ray.directionOfRay.x * t, ray.directionOfRay.y * t, ray.directionOfRay.z * t);
-                //Get all the cross products of P, if they are all above 0 then they are all going in the same direction from the plane, so P must be inside the triangle
-                glm::vec3 AxP0 = glm::cross(B - A, P - A);
-                glm::vec3 BxP0 = glm::cross(C - B, P - B);
-                glm::vec3 CxP0 = glm::cross(A - C, P - C);
-                if (glm::dot(AxP0, BxP0) > 0 && glm::dot(AxP0, CxP0) > 0) {
+                //Get all the cross products of P to a vertex and the side with the same ending vertex that the vector from P is drawn from and normalize
+                glm::vec3 sideOneCrossP = glm::normalize(glm::cross(B - A, P - A));
+                glm::vec3 sideTwoCrossP = glm::normalize(glm::cross(C - B, P - B));
+                glm::vec3 sideThreeCrossP = glm::normalize(glm::cross(A - C, P - C));
+                //If p lies within the triangle, all 3 of these cross products should be pointing in the same direction perpendicular from the triangle
+                //If 2 vectors are perpendicular, their dot product should equal 1 (giving it some wiggle room)
+                if (glm::dot(sideOneCrossP, sideTwoCrossP) > 0.99 && glm::dot(sideOneCrossP, sideTwoCrossP) < 1.01 &&
+                    glm::dot(sideOneCrossP, sideThreeCrossP) > 0.99 && glm::dot(sideOneCrossP, sideThreeCrossP) < 1.01 &&
+                    glm::dot(sideTwoCrossP, sideThreeCrossP) > 0.99 && glm::dot(sideTwoCrossP, sideThreeCrossP) < 1.01) {
                     triangleIntersectionValue = t;
                 }
             }
@@ -225,6 +233,7 @@ double triangleIntersectForShadow(Ray ray) {
     return triangleIntersectionValue;
 }
 
+//Same as above just not updating index
 double sphereIntersectForShadow(Ray ray) {
     //Currently set to the max value of a double so as not to risk an actual value being above it and not replaced properly
     double sphereIntersectionValue = DBL_MAX;
@@ -253,12 +262,18 @@ double sphereIntersectForShadow(Ray ray) {
     return sphereIntersectionValue;
 }
 
-//Shadow rays start from the intersection point of a light ray and an object
+double distanceFormula(glm::vec3 point1, glm::vec3 point2) {
+    double diffBtwnCoordinates = pow(point1.x - point2.x, 2) + pow(point1.y - point2.y, 2) + pow(point1.z - point2.z, 2);
+    return sqrt(diffBtwnCoordinates);
+}
+///Shadow rays start from the intersection point of a light ray and an object
 bool shadowIntersect(Light light, VertexForIntersectionPoints intersectionPoint) {
+    glm::vec3 shadowIntersectionPoint;
     glm::vec3 lightPosition = glm::make_vec3(light.position);
     //Shadow rays start from the intersection point of a light ray and an object
     glm::vec3 directionOfShadowRay = glm::normalize(lightPosition - intersectionPoint.position);
-    glm::vec3 originOfShadowRay = intersectionPoint.position + glm::vec3(directionOfShadowRay.x, directionOfShadowRay.y, directionOfShadowRay.z);
+    //Add direction to avoid issue of shadow ray starting exactly on object, start slightly in front to avoid black dots
+    glm::vec3 originOfShadowRay = intersectionPoint.position + directionOfShadowRay;
 
     Ray shadowRay;
     shadowRay.originOfRay = originOfShadowRay;
@@ -268,26 +283,29 @@ bool shadowIntersect(Light light, VertexForIntersectionPoints intersectionPoint)
     double sphereIntersectionValue = sphereIntersectForShadow(shadowRay);
 
     if (triangleIntersectionValue < 0 && sphereIntersectionValue < 0) return false;
-    
-    //If it does not intersect with a triangle but intersects with a sphere, or it intersects with both but the sphere takes precedent
-    if ((triangleIntersectionValue <= 0 && sphereIntersectionValue > 0) || (sphereIntersectionValue > 0 && sphereIntersectionValue < triangleIntersectionValue)) {
-        shadowIntersectionPoint = shadowRay.originOfRay + glm::vec3(shadowRay.directionOfRay.x * sphereIntersectionValue, shadowRay.directionOfRay.y * sphereIntersectionValue, shadowRay.directionOfRay.z * sphereIntersectionValue);
+    else {
+        //If it does not intersect with a triangle but intersects with a sphere, or it intersects with both but the sphere takes precedent
+        if ((triangleIntersectionValue <= 0 && sphereIntersectionValue > 0) || (sphereIntersectionValue > 0 && sphereIntersectionValue < triangleIntersectionValue)) {
+            shadowIntersectionPoint = shadowRay.originOfRay + glm::vec3(shadowRay.directionOfRay.x * sphereIntersectionValue, shadowRay.directionOfRay.y * sphereIntersectionValue, shadowRay.directionOfRay.z * sphereIntersectionValue);
+        }
+        //If it does not intersect with a sphere but intersects with a triangle, or it intersects with both but the triangle takes precedent
+        else if ((sphereIntersectionValue <= 0 && triangleIntersectionValue > 0) || (triangleIntersectionValue > 0 && triangleIntersectionValue < sphereIntersectionValue)) {
+            shadowIntersectionPoint = shadowRay.originOfRay + glm::vec3(shadowRay.directionOfRay.x * triangleIntersectionValue, shadowRay.directionOfRay.y * triangleIntersectionValue, shadowRay.directionOfRay.z * triangleIntersectionValue);
+
+        }
+
+        //now calculate the distance between the shadow raw intersection point and the start of the shadow ray (intersected point on the object)
+        double distanceBtwnShadowAndPoint = distanceFormula(originOfShadowRay, shadowIntersectionPoint);
+        //now calculate the distance between the light point and the start of the shadow ray (intersected point on the object)
+        double distanceBtwnLightAndPoint = distanceFormula(originOfShadowRay, lightPosition);
+
+        //If these distances are practically the same, that means there was no actual object in the middle blocking the shadow ray as it was able to make it all the way to the light source
+        if (distanceBtwnShadowAndPoint - distanceBtwnLightAndPoint > 0.000001) return false;
+
+        return true;
     }
-    //If it does not intersect with a sphere but intersects with a triangle, or it intersects with both but the triangle takes precedent
-    else if ((sphereIntersectionValue <= 0 && triangleIntersectionValue > 0) || (triangleIntersectionValue > 0 && triangleIntersectionValue < sphereIntersectionValue)) {
-        shadowIntersectionPoint = shadowRay.originOfRay + glm::vec3(shadowRay.directionOfRay.x * triangleIntersectionValue, shadowRay.directionOfRay.y * triangleIntersectionValue, shadowRay.directionOfRay.z * triangleIntersectionValue);
-   
-    }
-
-    //now calculate the distance between the shadow intersection point and the intersected point on the object
-    double distanceBtwnShadowAndPoint = sqrt(pow((intersectionPoint.position - shadowIntersectionPoint).x, 2) + pow((intersectionPoint.position - shadowIntersectionPoint).y, 2) + pow((intersectionPoint.position - shadowIntersectionPoint).z, 2));
-    //now calculate the distance between the light point and the intersected point on the object
-    double distanceBtwnLightAndPoint = sqrt(pow((intersectionPoint.position - lightPosition).x, 2) + pow((intersectionPoint.position - lightPosition).y, 2) + pow((intersectionPoint.position - lightPosition).z, 2));
-
-    //If the distances are greater than a very small value, the shadow ray is blocked
-    if (distanceBtwnShadowAndPoint - distanceBtwnLightAndPoint > 1e-5) return false;
-
     return true;
+    
 }
 
 
@@ -303,66 +321,38 @@ glm::vec3 getColor(VertexForIntersectionPoints intersectionPoint) {
             glm::vec3 directionOfRay = glm::normalize(currLightPosition - intersectionPoint.position);
 
             //Calculating diffuse values
-            double temporaryDiffuseConstant = std::max(glm::dot(directionOfRay, intersectionPoint.normal), 0.0f);
-            glm::vec3 temporaryDiffuseVector = glm::vec3(intersectionPoint.color_diffuse.x * temporaryDiffuseConstant, intersectionPoint.color_diffuse.y * temporaryDiffuseConstant, intersectionPoint.color_diffuse.z * temporaryDiffuseConstant);
-            glm::vec3 finalDiffuseVector = currLightColor * temporaryDiffuseVector;
+            double LdotN = std::max(glm::dot(directionOfRay, intersectionPoint.normal), 0.0f);
+            glm::vec3 diffuseVector = glm::vec3(intersectionPoint.color_diffuse.x * LdotN, intersectionPoint.color_diffuse.y * LdotN, intersectionPoint.color_diffuse.z * LdotN);
 
             //Calculating specular values
             double reflectConstant = glm::dot(intersectionPoint.normal, -directionOfRay);
             glm::vec3 R = glm::normalize(-(glm::vec3(intersectionPoint.normal.x * 2.0 * reflectConstant, intersectionPoint.normal.y * 2.0 * reflectConstant, intersectionPoint.normal.z * 2.0 * reflectConstant) + directionOfRay));
             glm::vec3 V = glm::normalize(-intersectionPoint.position);
-            double specularConstant1 = std::max(glm::dot(V, R), 0.0f);
-            double specularConstant = pow(specularConstant1, intersectionPoint.shininess);
-            glm::vec3 temporarySpecularVector = glm::vec3(intersectionPoint.color_specular.x * specularConstant, intersectionPoint.color_specular.y * specularConstant, intersectionPoint.color_specular.z * specularConstant);
-            glm::vec3 finalSpecularVector = currLightColor * temporarySpecularVector;
+            double RdotV = std::max(glm::dot(V, R), 0.0f);
+            double specularConstant = pow(RdotV, intersectionPoint.shininess);
+            glm::vec3 specularVector = glm::vec3(intersectionPoint.color_specular.x * specularConstant, intersectionPoint.color_specular.y * specularConstant, intersectionPoint.color_specular.z * specularConstant);
             
-            glm::vec3 specDiff = finalDiffuseVector + finalSpecularVector;
-            color += specDiff;
-            //if (specDiff.z != 0) printf("%lf", specDiff.z);
+            //I = lightColor * (kd * (L dot N) + ks * (R dot V) ^ sh)
+            glm::vec3 I = currLightColor * (diffuseVector + specularVector);
+            color += I;
 
         }
     }
     return color;
 }
 
-double areaCalculations(glm::vec3 vector1, glm::vec3 vector2) {
-    double A = glm::vec3(vector1.y * vector2.z - vector1.z * vector2.y, vector1.z * vector2.x - vector1.x * vector2.z, vector1.x * vector2.y - vector1.y * vector2.x).x *
-        glm::vec3(vector1.y * vector2.z - vector1.z * vector2.y, vector1.z * vector2.x - vector1.x * vector2.z, vector1.x * vector2.y - vector1.y * vector2.x).x;
-
-    double B = glm::vec3(vector1.y * vector2.z - vector1.z * vector2.y, vector1.z * vector2.x - vector1.x * vector2.z, vector1.x * vector2.y - vector1.y * vector2.x).y *
-        glm::vec3(vector1.y * vector2.z - vector1.z * vector2.y, vector1.z * vector2.x - vector1.x * vector2.z, vector1.x * vector2.y - vector1.y * vector2.x).y;
-
-    double C = glm::vec3(vector1.y * vector2.z - vector1.z * vector2.y, vector1.z * vector2.x - vector1.x * vector2.z, vector1.x * vector2.y - vector1.y * vector2.x).z *
-        glm::vec3(vector1.y * vector2.z - vector1.z * vector2.y, vector1.z * vector2.x - vector1.x * vector2.z, vector1.x * vector2.y - vector1.y * vector2.x).z;
-
-    return 0.5 * sqrt(A + B + C);
+//From lecture 16 Computing Triangle Area in 2D
+// 3 different planes to ensure you're not mapping onto coordinates the triangle is perpendicular to, otherwise makes it all black
+double calculateTriangleAreaInXYPlane(glm::vec3 A, glm::vec3 B, glm::vec3 C) {
+    return ((B.x - A.x) * (C.y - A.y) - (C.x - A.x) * (B.y - A.y)) / 2.0;
 }
-double* triangleCalculations(Triangle triangle, glm::vec3 position) {
-    glm::vec3 vertexOnePosition = glm::make_vec3(triangle.v[0].position);
-    glm::vec3 vertexTwoPosition = glm::make_vec3(triangle.v[1].position);
-    glm::vec3 vertexThreePosition = glm::make_vec3(triangle.v[2].position);
-    
-    glm::vec3 sideOneOfTriangle = vertexTwoPosition - vertexOnePosition;
-    glm::vec3 sideTwoOfTriangle = vertexThreePosition - vertexOnePosition;
 
-    glm::vec3 vertexOneToIntersection = vertexOnePosition - position;
-    glm::vec3 vertexTwoToIntersection = vertexTwoPosition - position;
-    glm::vec3 vertexThreeToIntersection = vertexThreePosition - position;
+double calculateTriangleAreaInXZPlane(glm::vec3 A, glm::vec3 B, glm::vec3 C) {
+    return ((B.x - A.x) * (C.z - A.z) - (C.x - A.x) * (B.z - A.z)) / 2.0;
+}
 
-
-    double areaOfMainTriangle = areaCalculations(sideOneOfTriangle, sideTwoOfTriangle);
-    
-    double areaOfOneTwoIntersect = areaCalculations(vertexOneToIntersection, vertexTwoToIntersection);
-    double areaOfTwoThreeIntersect = areaCalculations(vertexTwoToIntersection, vertexThreeToIntersection);
-    double areaOfThreeOneIntersect = areaCalculations(vertexThreeToIntersection, vertexOneToIntersection);
-
-    double areaRatios[3];
-
-    areaRatios[0] = areaOfTwoThreeIntersect / areaOfMainTriangle;
-    areaRatios[1] = areaOfThreeOneIntersect / areaOfMainTriangle;
-    areaRatios[2] = areaOfOneTwoIntersect / areaOfMainTriangle;
-
-    return areaRatios;
+double calculateTriangleAreaInYZPlane(glm::vec3 A, glm::vec3 B, glm::vec3 C) {
+    return ((B.y - A.y) * (C.z - A.z) - (C.y - A.y) * (B.z - A.z)) / 2.0;
 }
 
 glm::vec3 phongLightingTriangle(Ray emittedRay) {
@@ -370,24 +360,60 @@ glm::vec3 phongLightingTriangle(Ray emittedRay) {
     glm::vec3 position = emittedRay.originOfRay + glm::vec3(emittedRay.directionOfRay.x * triangleIntersectionValue, emittedRay.directionOfRay.y * triangleIntersectionValue, emittedRay.directionOfRay.z * triangleIntersectionValue);
     
     Triangle currTriangle = triangles[indexOfIntersectingTriangle];
-    double* areaRatios = triangleCalculations(currTriangle, position);
 
-    glm::vec3 diffuse = glm::vec3(currTriangle.v[0].color_diffuse[0] * areaRatios[0], currTriangle.v[0].color_diffuse[1] * areaRatios[0], currTriangle.v[0].color_diffuse[2] * areaRatios[0]) +
-        glm::vec3(currTriangle.v[1].color_diffuse[0] * areaRatios[1], currTriangle.v[1].color_diffuse[1] * areaRatios[1], currTriangle.v[1].color_diffuse[2] * areaRatios[1]) +
-        glm::vec3(currTriangle.v[2].color_diffuse[0] * areaRatios[2], currTriangle.v[2].color_diffuse[1] * areaRatios[2], currTriangle.v[2].color_diffuse[2] * areaRatios[2]);
+    glm::vec3 vertexOnePosition = glm::make_vec3(currTriangle.v[0].position);
+    glm::vec3 vertexTwoPosition = glm::make_vec3(currTriangle.v[1].position);
+    glm::vec3 vertexThreePosition = glm::make_vec3(currTriangle.v[2].position);
 
-    glm::vec3 specular = glm::vec3(currTriangle.v[0].color_specular[0] * areaRatios[0], currTriangle.v[0].color_specular[1] * areaRatios[0], currTriangle.v[0].color_specular[2] * areaRatios[0]) +
-        glm::vec3(currTriangle.v[1].color_specular[0] * areaRatios[1], currTriangle.v[1].color_specular[1] * areaRatios[1], currTriangle.v[1].color_specular[2] * areaRatios[1]) +
-        glm::vec3(currTriangle.v[2].color_specular[0] * areaRatios[2], currTriangle.v[2].color_specular[1] * areaRatios[2], currTriangle.v[2].color_specular[2] * areaRatios[2]);
 
-    glm::vec3 normal = glm::normalize(glm::vec3(currTriangle.v[0].normal[0] * areaRatios[0], currTriangle.v[0].normal[1] * areaRatios[0], currTriangle.v[0].normal[2] * areaRatios[0]) +
-        glm::vec3(currTriangle.v[1].normal[0] * areaRatios[1], currTriangle.v[1].normal[1] * areaRatios[1], currTriangle.v[1].normal[2] * areaRatios[1]) +
-        glm::vec3(currTriangle.v[2].normal[0] * areaRatios[2], currTriangle.v[2].normal[1] * areaRatios[2], currTriangle.v[2].normal[2] * areaRatios[2]));
+    glm::vec3 A = glm::vec3(currTriangle.v[0].position[0], currTriangle.v[0].position[1], currTriangle.v[0].position[2]);
+    glm::vec3 B = glm::vec3(currTriangle.v[1].position[0], currTriangle.v[1].position[1], currTriangle.v[1].position[2]);
+    glm::vec3 C = glm::vec3(currTriangle.v[2].position[0], currTriangle.v[2].position[1], currTriangle.v[2].position[2]);
+    glm::vec3 normalOfTriangle = glm::cross(B - A, C - A);
+
+    //From lecture 16 Computing Triangle Area in 2D
+    double alpha = 0.0;
+    double beta = 0.0;
+    double gamma = 0.0;
+
+    //Make sure that the triangle is not perpendicular to the plane you're mapping the Barycentric coordinates onto
+    if (abs(glm::dot(normalOfTriangle, glm::vec3(0.0, 1.0, 0.0))) > 0.000001) {
+        //Use the XZ plane
+        double totalArea = calculateTriangleAreaInXZPlane(vertexOnePosition, vertexTwoPosition, vertexThreePosition);
+        alpha = calculateTriangleAreaInXZPlane(position, vertexTwoPosition, vertexThreePosition) / totalArea;
+        beta = calculateTriangleAreaInXZPlane(vertexOnePosition, position, vertexThreePosition) / totalArea;
+        gamma = calculateTriangleAreaInXZPlane(vertexOnePosition, vertexTwoPosition, position) / totalArea;
+    }
+    else if (abs(glm::dot(normalOfTriangle, glm::vec3(0.0, 0.0, 1.0))) > 0.000001) {
+        //Use the XY plane
+        double totalArea = calculateTriangleAreaInXYPlane(vertexOnePosition, vertexTwoPosition, vertexThreePosition);
+        alpha = calculateTriangleAreaInXYPlane(position, vertexTwoPosition, vertexThreePosition) / totalArea;
+        beta = calculateTriangleAreaInXYPlane(vertexOnePosition, position, vertexThreePosition) / totalArea;
+        gamma = calculateTriangleAreaInXYPlane(vertexOnePosition, vertexTwoPosition, position) / totalArea;
+    } 
+    else {
+        //Use the YZ plane
+        double totalArea = calculateTriangleAreaInYZPlane(vertexOnePosition, vertexTwoPosition, vertexThreePosition);
+        alpha = calculateTriangleAreaInYZPlane(position, vertexTwoPosition, vertexThreePosition) / totalArea;
+        beta = calculateTriangleAreaInYZPlane(vertexOnePosition, position, vertexThreePosition) / totalArea;
+        gamma = calculateTriangleAreaInYZPlane(vertexOnePosition, vertexTwoPosition, position) / totalArea;
+    }
+    //adjust based on the ratios alpha beta and gamma
+    glm::vec3 diffuse = glm::vec3(currTriangle.v[0].color_diffuse[0] * alpha, currTriangle.v[0].color_diffuse[1] * alpha, currTriangle.v[0].color_diffuse[2] * alpha) +
+        glm::vec3(currTriangle.v[1].color_diffuse[0] * beta, currTriangle.v[1].color_diffuse[1] * beta, currTriangle.v[1].color_diffuse[2] * beta) +
+        glm::vec3(currTriangle.v[2].color_diffuse[0] * gamma, currTriangle.v[2].color_diffuse[1] * gamma, currTriangle.v[2].color_diffuse[2] * gamma);
+
+    glm::vec3 specular = glm::vec3(currTriangle.v[0].color_specular[0] * alpha, currTriangle.v[0].color_specular[1] * alpha, currTriangle.v[0].color_specular[2] * alpha) +
+        glm::vec3(currTriangle.v[1].color_specular[0] * beta, currTriangle.v[1].color_specular[1] * beta, currTriangle.v[1].color_specular[2] * beta) +
+        glm::vec3(currTriangle.v[2].color_specular[0] * gamma, currTriangle.v[2].color_specular[1] * gamma, currTriangle.v[2].color_specular[2] * gamma);
+
+    glm::vec3 normal = glm::normalize(glm::vec3(currTriangle.v[0].normal[0] * alpha, currTriangle.v[0].normal[1] * alpha, currTriangle.v[0].normal[2] * alpha) +
+        glm::vec3(currTriangle.v[1].normal[0] * beta, currTriangle.v[1].normal[1] * beta, currTriangle.v[1].normal[2] * beta) +
+        glm::vec3(currTriangle.v[2].normal[0] * gamma, currTriangle.v[2].normal[1] * gamma, currTriangle.v[2].normal[2] * gamma));
     
-    double shininess = currTriangle.v[0].shininess * areaRatios[0] + currTriangle.v[1].shininess * areaRatios[1] + currTriangle.v[2].shininess * areaRatios[2];
+    double shininess = currTriangle.v[0].shininess * alpha + currTriangle.v[1].shininess * beta + currTriangle.v[2].shininess * gamma;
 
     VertexForIntersectionPoints intersectionPoint = { position, diffuse, specular, normal, shininess };
-    //Create edges of the triangle
     return getColor(intersectionPoint);
 }
 
@@ -413,24 +439,23 @@ void draw_scene()
 {
     float zeroArray[3] = { 0.0, 0.0, 0.0 };
     glm::vec3 camPos = glm::make_vec3(zeroArray);
-    //iPOsition and jPosition used to move along image and draw each line
+    //iPosition and jPosition used to move along image and draw each line
     double iPosition = leftOfImage;
+    //Will be updated with color values r, g, b
+
     for (int i = 0; i < WIDTH; i++) {
         glPointSize(2.0);
         glBegin(GL_POINTS);
 
         double jPosition = bottomOfImage;
         for (int j = 0; j < HEIGHT; j++) {
-            //Will be updated with color values r, g, b
-            glm::vec3 rayTracedColor = glm::vec3(0.0, 0.0, 0.0);
+            glm::vec3 rayTracedColor = glm::make_vec3(ambient_light);
 
-            double currDirectionArray[3] = { iPosition, jPosition, -1 };
-            glm::vec3 currDirection = glm::make_vec3(currDirectionArray);
-            glm::vec3 normalizedDirection = glm::normalize(currDirection);
+            glm::vec3 directionOfRay = glm::normalize(glm::vec3(iPosition, jPosition, -1));
 
             Ray emittedRay;
             emittedRay.originOfRay = camPos;
-            emittedRay.directionOfRay = normalizedDirection;
+            emittedRay.directionOfRay = directionOfRay;
 
             double triangleIntersectionValue = triangleIntersect(emittedRay);
             double sphereIntersectionValue = sphereIntersect(emittedRay);
@@ -442,18 +467,16 @@ void draw_scene()
             else {
                 //If it does not intersect with a triangle but intersects with a sphere, or it intersects with both but the sphere takes precedent
                 if ((triangleIntersectionValue <= 0 && sphereIntersectionValue > 0) || (sphereIntersectionValue > 0 && sphereIntersectionValue < triangleIntersectionValue)) {
-                //rayTracedColor.x = 255.0;
-                  rayTracedColor = phongLightingSphere(emittedRay);
+                  rayTracedColor += phongLightingSphere(emittedRay);
                 }
                 //If it does not intersect with a sphere but intersects with a triangle, or it intersects with both but the triangle takes precedent
                 else if ((sphereIntersectionValue <= 0 && triangleIntersectionValue > 0) || (triangleIntersectionValue > 0 && triangleIntersectionValue < sphereIntersectionValue)) {
-                 //   rayTracedColor.x = 255.0;
-                    rayTracedColor = phongLightingTriangle(emittedRay);
+                    rayTracedColor += phongLightingTriangle(emittedRay);
                 }
                 //Clamping color values at 1
-                if (rayTracedColor.x > 1) rayTracedColor.x = 1.0;
-                if (rayTracedColor.y > 1) rayTracedColor.y = 1.0;
-                if (rayTracedColor.z > 1) rayTracedColor.z = 1.0;
+                if (rayTracedColor.x > 1.0) rayTracedColor.x = 1.0;
+                if (rayTracedColor.y > 1.0) rayTracedColor.y = 1.0;
+                if (rayTracedColor.z > 1.0) rayTracedColor.z = 1.0;
 
                 plot_pixel(i, j, rayTracedColor.x * 255.0, rayTracedColor.y * 255.0, rayTracedColor.z * 255.0);
             }
